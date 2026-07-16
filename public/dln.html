@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DLN AI — Learning Navigator</title>
+<style>
+  :root{
+    --primary:#8B5CF6; --secondary:#6D28D9; --accent:#F59E0B;
+    --bg-dark:#0B0716; --card-dark:#14102A;
+    --primary-rgb:139,92,246; --secondary-rgb:109,40,217; --accent-rgb:245,158,11;
+    --bg-rgb:11,7,22; --card-rgb:20,16,42;
+    --text:#E5E7EB; --text-dim:#9CA3AF; --border:rgba(255,255,255,.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Inter,sans-serif;
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(var(--primary-rgb),.25), transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, rgba(var(--secondary-rgb),.22), transparent 60%),
+      radial-gradient(700px 400px at 50% 120%, rgba(var(--accent-rgb),.15), transparent 60%),
+      var(--bg-dark);
+    color:var(--text); min-height:100vh; overflow-x:hidden;
+  }
+  a{color:inherit;text-decoration:none}
+  button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+  input,textarea,select{font:inherit;color:inherit}
+  .glass{
+    background:linear-gradient(180deg, rgba(var(--card-rgb),.75), rgba(var(--card-rgb),.55));
+    border:1px solid var(--border); backdrop-filter: blur(18px) saturate(140%);
+    border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:12px;
+    background:linear-gradient(135deg,var(--primary),var(--secondary));
+    color:#fff;font-weight:600;box-shadow:0 8px 24px rgba(var(--primary-rgb),.35);
+    transition:transform .15s ease, box-shadow .2s ease;
+  }
+  .btn:hover{transform:translateY(-1px);box-shadow:0 12px 30px rgba(var(--primary-rgb),.5)}
+  .btn.ghost{background:rgba(255,255,255,.06);border:1px solid var(--border);box-shadow:none}
+  .btn.accent{background:linear-gradient(135deg,var(--accent),#f97316);box-shadow:0 8px 24px rgba(var(--accent-rgb),.35)}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:rgba(var(--primary-rgb),.15);border:1px solid rgba(var(--primary-rgb),.35);color:#fff;font-size:12px;cursor:pointer}
+  .chip:hover{background:rgba(var(--primary-rgb),.25)}
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;background:rgba(var(--accent-rgb),.15);color:var(--accent);border:1px solid rgba(var(--accent-rgb),.35)}
+  .badge.red{background:rgba(239,68,68,.15);color:#f87171;border-color:rgba(239,68,68,.35)}
+  .badge.green{background:rgba(34,197,94,.15);color:#4ade80;border-color:rgba(34,197,94,.35)}
+  .badge.blue{background:rgba(59,130,246,.15);color:#60a5fa;border-color:rgba(59,130,246,.35)}
+  input[type=text],input[type=email],input[type=password],textarea,select{
+    width:100%;padding:12px 14px;border-radius:12px;background:rgba(0,0,0,.35);
+    border:1px solid var(--border);outline:none;
+  }
+  textarea{min-height:120px;resize:vertical}
+  input:focus,textarea:focus,select:focus{border-color:rgba(var(--primary-rgb),.7);box-shadow:0 0 0 4px rgba(var(--primary-rgb),.15)}
+  label{font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em}
+
+  /* ============ AUTH ============ */
+  #auth{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+  #auth .card{width:100%;max-width:440px;padding:36px}
+  #auth .logo{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+  #auth h1{font-size:26px;margin-bottom:6px}
+  #auth p.sub{color:var(--text-dim);margin-bottom:24px;font-size:14px}
+  #auth .field{margin-bottom:14px}
+  #auth .row{display:flex;gap:10px;margin-top:8px}
+  #auth .row .btn{flex:1;justify-content:center}
+
+  /* ============ APP SHELL ============ */
+  #app{display:none;min-height:100vh}
+  #app.on{display:grid;grid-template-columns:260px 1fr}
+  .sidebar{
+    position:sticky;top:0;height:100vh;padding:20px 14px;overflow-y:auto;
+    background:linear-gradient(180deg, rgba(var(--card-rgb),.85), rgba(var(--bg-rgb),.85));
+    border-right:1px solid var(--border);backdrop-filter:blur(18px);
+  }
+  .brand{display:flex;align-items:center;gap:10px;padding:6px 8px 18px;border-bottom:1px solid var(--border);margin-bottom:14px}
+  .brand .name{font-weight:800;letter-spacing:.02em}
+  .brand .sub{font-size:11px;color:var(--text-dim)}
+  .nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;color:var(--text-dim);font-size:14px;margin-bottom:4px}
+  .nav a:hover{background:rgba(255,255,255,.05);color:#fff}
+  .nav a.active{background:linear-gradient(135deg,rgba(var(--primary-rgb),.25),rgba(var(--secondary-rgb),.25));color:#fff;border:1px solid rgba(var(--primary-rgb),.35)}
+  .nav svg{width:18px;height:18px;flex:0 0 18px}
+  .sidebar .foot{margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+
+  .main{min-width:0}
+  .topbar{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:rgba(var(--bg-rgb),.6);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+  .topbar .title{font-size:18px;font-weight:700}
+  .topbar .actions{display:flex;align-items:center;gap:10px}
+  .icon-btn{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center;position:relative}
+  .icon-btn:hover{background:rgba(var(--primary-rgb),.15)}
+  .icon-btn .dot{position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+  .avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff}
+
+  .content{padding:24px;max-width:1400px;margin:0 auto}
+  .view{display:none;animation:fade .3s ease}
+  .view.on{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .grid{display:grid;gap:16px}
+  .g-4{grid-template-columns:repeat(4,1fr)}
+  .g-3{grid-template-columns:repeat(3,1fr)}
+  .g-2{grid-template-columns:repeat(2,1fr)}
+  @media(max-width:960px){.g-4{grid-template-columns:repeat(2,1fr)}.g-3,.g-2{grid-template-columns:1fr}}
+
+  .stat{padding:18px}
+  .stat .k{font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em}
+  .stat .v{font-size:28px;font-weight:800;margin-top:6px;background:linear-gradient(135deg,var(--primary),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .stat .d{font-size:12px;color:#4ade80;margin-top:4px}
+
+  .card{padding:18px}
+  .card h3{font-size:14px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-dim);margin-bottom:12px}
+  .card h2{font-size:20px;margin-bottom:8px}
+
+  .progress{height:12px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:10px}
+  .progress > div{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));box-shadow:0 0 20px rgba(var(--primary-rgb),.7);border-radius:999px}
+
+  .list{display:flex;flex-direction:column;gap:10px}
+  .list .item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid var(--border)}
+  .list .item .dot{width:8px;height:8px;border-radius:50%;background:var(--primary);box-shadow:0 0 12px var(--primary)}
+  .list .item .meta{font-size:12px;color:var(--text-dim)}
+
+  /* CHAT */
+  .chat{display:flex;flex-direction:column;height:calc(100vh - 180px);min-height:520px}
+  .chat .msgs{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:12px}
+  .msg{max-width:78%;padding:12px 14px;border-radius:14px;line-height:1.5;white-space:pre-wrap}
+  .msg.u{align-self:flex-end;background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;border-bottom-right-radius:4px}
+  .msg.a{align-self:flex-start;background:rgba(255,255,255,.06);border:1px solid var(--border);border-bottom-left-radius:4px}
+  .chat .input{display:flex;gap:8px;padding-top:10px;border-top:1px solid var(--border);margin-top:10px}
+  .chat .input textarea{min-height:52px;max-height:140px}
+
+  /* Table */
+  table{width:100%;border-collapse:collapse}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:14px}
+  th{color:var(--text-dim);font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+
+  /* Tabs */
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+  .tabs button{padding:8px 14px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text-dim);font-size:13px;font-weight:600}
+  .tabs button.on{background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;border-color:transparent}
+
+  /* Chart */
+  .bars{display:flex;align-items:flex-end;gap:10px;height:200px;padding:10px 0}
+  .bars .bar{flex:1;background:linear-gradient(180deg,var(--primary),var(--secondary));border-radius:8px 8px 0 0;box-shadow:0 0 20px rgba(var(--primary-rgb),.3);position:relative}
+  .bars .bar span{position:absolute;bottom:-22px;left:0;right:0;text-align:center;font-size:11px;color:var(--text-dim)}
+  .pie{width:180px;height:180px;border-radius:50%;background:conic-gradient(var(--primary) 0 40%, var(--secondary) 40% 65%, var(--accent) 65% 85%, #4b5563 85% 100%);position:relative;margin:0 auto}
+  .pie::after{content:"";position:absolute;inset:30px;border-radius:50%;background:var(--card-dark)}
+  .legend{display:flex;flex-direction:column;gap:8px;font-size:13px}
+  .legend .sw{width:12px;height:12px;border-radius:3px;display:inline-block;margin-right:8px;vertical-align:middle}
+
+  /* Modal */
+  .modal-back{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+  .modal-back.on{display:flex}
+  .modal{width:100%;max-width:520px;padding:24px}
+  .modal.wide{max-width:720px}
+  .close{position:absolute;top:12px;right:14px;font-size:22px;color:var(--text-dim)}
+
+  /* Color Studio */
+  .cs-row{display:grid;grid-template-columns:110px 60px 1fr;gap:10px;align-items:center;margin-bottom:10px}
+  .cs-row input[type=color]{width:60px;height:38px;border-radius:8px;border:1px solid var(--border);background:transparent;padding:2px}
+  .presets{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px}
+  .preset{padding:10px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.03);display:flex;align-items:center;gap:10px;cursor:pointer}
+  .preset .sw{display:flex;gap:4px}
+  .preset .sw i{width:14px;height:14px;border-radius:4px;display:inline-block}
+
+  /* I'm Lost floating button */
+  .lost-btn{position:fixed;bottom:22px;right:22px;z-index:40;padding:14px 18px;border-radius:999px;background:linear-gradient(135deg,var(--accent),#ef4444);color:#fff;font-weight:700;box-shadow:0 10px 30px rgba(var(--accent-rgb),.5);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 10px 30px rgba(var(--accent-rgb),.5)}50%{box-shadow:0 10px 40px rgba(var(--accent-rgb),.9)}}
+
+  /* Hamburger */
+  .hamb{display:none}
+  @media(max-width:900px){
+    #app.on{grid-template-columns:1fr}
+    .sidebar{position:fixed;left:-280px;top:0;width:260px;z-index:70;transition:left .25s ease}
+    .sidebar.on{left:0}
+    .hamb{display:inline-flex}
+  }
+
+  /* Resource / Assignment cards */
+  .rcard{padding:16px;display:flex;flex-direction:column;gap:8px}
+  .rcard h4{font-size:15px}
+  .rcard .meta{font-size:12px;color:var(--text-dim)}
+  .rcard .acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:10px 16px;border-radius:10px;border:1px solid var(--border);z-index:100;font-size:14px;display:none}
+  .toast.on{display:block;animation:fade .2s ease}
+
+  .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .drop{border:2px dashed rgba(var(--primary-rgb),.4);padding:24px;text-align:center;border-radius:14px;background:rgba(var(--primary-rgb),.05)}
+  .drop.hover{background:rgba(var(--primary-rgb),.15)}
+
+  .kbd{font-size:11px;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,.08);border:1px solid var(--border);color:var(--text-dim)}
+</style>
+</head>
+<body>
+
+<!-- =============== LOGO SVG DEFS =============== -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="logoGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="var(--primary)"/>
+      <stop offset="100%" stop-color="var(--accent)"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<!-- =============== AUTH =============== -->
+<section id="auth">
+  <div class="glass card">
+    <div class="logo">
+      <svg width="42" height="42" viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="20" fill="url(#logoGrad)" opacity="0.15"/>
+        <path d="M8 36 L24 10 L40 36 L24 30 Z" fill="url(#logoGrad)"/>
+        <circle cx="24" cy="24" r="4" fill="#0B0716"/>
+        <path d="M14 38 h20 v2 h-20 z M14 40 h20 v2 h-20 z" fill="url(#logoGrad)" opacity="0.8"/>
+      </svg>
+      <div>
+        <div style="font-weight:800;font-size:20px">DLN AI</div>
+        <div style="font-size:11px;color:var(--text-dim)">Learning Navigator</div>
+      </div>
+    </div>
+    <h1>Welcome back</h1>
+    <p class="sub">Your AI-powered workplace productivity assistant — helping learners, facilitators, coordinators and managers automate emails, meetings, planning, research and more.</p>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" placeholder="you@company.com" />
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" placeholder="••••••••" />
+    </div>
+    <div class="row">
+      <button class="btn" onclick="event.preventDefault();enterApp()">Sign In</button>
+      <button class="btn ghost" onclick="event.preventDefault();enterApp()">Try Demo Access</button>
+    </div>
+    <p style="font-size:11px;color:var(--text-dim);margin-top:16px;text-align:center">Demo mode reveals full app shell with live AI features.</p>
+  </div>
+</section>
+
+<!-- =============== APP =============== -->
+<div id="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="20" fill="url(#logoGrad)" opacity="0.15"/>
+        <path d="M8 36 L24 10 L40 36 L24 30 Z" fill="url(#logoGrad)"/>
+        <circle cx="24" cy="24" r="4" fill="#0B0716"/>
+        <path d="M14 38 h20 v2 h-20 z M14 40 h20 v2 h-20 z" fill="url(#logoGrad)" opacity="0.8"/>
+      </svg>
+      <div>
+        <div class="name">DLN AI</div>
+        <div class="sub">Learning Navigator</div>
+      </div>
+    </div>
+    <nav class="nav" id="nav">
+      <a data-view="dashboard" class="active"><span>📊</span> Dashboard</a>
+      <a data-view="chatbot"><span>💬</span> AI Chatbot</a>
+      <a data-view="email"><span>✉️</span> Email Generator</a>
+      <a data-view="meeting"><span>🎙️</span> Meeting Summarizer</a>
+      <a data-view="planner"><span>🗓️</span> Task Planner</a>
+      <a data-view="research"><span>🔎</span> Research Assistant</a>
+      <a data-view="announce"><span>📣</span> Announcement Assistant</a>
+      <a data-view="notifs"><span>🔔</span> Notification Center</a>
+      <a data-view="assign"><span>📚</span> Assignment Hub</a>
+      <a data-view="resources"><span>🎓</span> Learning Resources</a>
+      <a data-view="analytics"><span>📈</span> Productivity Analytics</a>
+      <a data-view="settings"><span>⚙️</span> Settings</a>
+    </nav>
+    <div class="foot">
+      <a onclick="logout()" style="color:#f87171;cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 12px">↩︎ Log out</a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="icon-btn hamb" onclick="document.getElementById('sidebar').classList.toggle('on')">☰</button>
+        <div class="title" id="viewTitle">Dashboard</div>
+      </div>
+      <div class="actions">
+        <button class="icon-btn" title="Color Studio" onclick="openModal('colorStudio')">🎨</button>
+        <button class="icon-btn" title="Notifications" onclick="switchView('notifs')">🔔<span class="dot"></span></button>
+        <div class="avatar">DL</div>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- ========== DASHBOARD ========== -->
+      <section class="view on" data-view="dashboard">
+        <div class="grid g-4">
+          <div class="glass stat"><div class="k">Tasks Today</div><div class="v">12</div><div class="d">▲ 3 from yesterday</div></div>
+          <div class="glass stat"><div class="k">Meetings</div><div class="v">4</div><div class="d">2 summarized</div></div>
+          <div class="glass stat"><div class="k">Assignments</div><div class="v">7</div><div class="d">2 due this week</div></div>
+          <div class="glass stat"><div class="k">Streak</div><div class="v">21d</div><div class="d">Personal best</div></div>
+        </div>
+
+        <div class="grid g-2" style="margin-top:16px">
+          <div class="glass card">
+            <h3>Weekly Progress</h3>
+            <h2>78% of goals completed</h2>
+            <div class="progress"><div style="width:78%"></div></div>
+            <p style="color:var(--text-dim);margin-top:10px;font-size:13px">You're ahead of schedule — keep the streak alive.</p>
+          </div>
+          <div class="glass card">
+            <h3>AI Recommendations</h3>
+            <div class="list">
+              <div class="item"><div class="dot"></div><div><div>Schedule deep-work block at 9–11 AM</div><div class="meta">Based on your peak focus hours</div></div></div>
+              <div class="item"><div class="dot"></div><div><div>Review Module 4 flashcards</div><div class="meta">Assignment due Friday</div></div></div>
+              <div class="item"><div class="dot"></div><div><div>Summarize Monday's stand-up</div><div class="meta">Transcript ready in Meeting Summarizer</div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid g-2" style="margin-top:16px">
+          <div class="glass card">
+            <h3>Recent Activity</h3>
+            <div class="list">
+              <div class="item"><div class="dot"></div><div><div>Generated onboarding email</div><div class="meta">2h ago</div></div></div>
+              <div class="item"><div class="dot"></div><div><div>Summarized Q3 planning meeting</div><div class="meta">Yesterday</div></div></div>
+              <div class="item"><div class="dot"></div><div><div>Created weekly study plan</div><div class="meta">2 days ago</div></div></div>
+            </div>
+          </div>
+          <div class="glass card">
+            <h3>Quick Actions</h3>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <button class="btn" onclick="switchView('email')">✉️ New Email</button>
+              <button class="btn ghost" onclick="switchView('meeting')">🎙️ Summarize Meeting</button>
+              <button class="btn ghost" onclick="switchView('planner')">🗓️ Plan My Day</button>
+              <button class="btn accent" onclick="switchView('research')">🔎 Research</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== CHATBOT ========== -->
+      <section class="view" data-view="chatbot">
+        <div class="glass card">
+          <h3>DLN Assistant</h3>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+            <span class="chip" onclick="chatSuggest(this)">Help me plan my week</span>
+            <span class="chip" onclick="chatSuggest(this)">Explain a concept</span>
+            <span class="chip" onclick="chatSuggest(this)">Draft a quick email</span>
+            <span class="chip" onclick="chatSuggest(this)">Summarize my day</span>
+          </div>
+          <div class="chat">
+            <div class="msgs" id="chatMsgs">
+              <div class="msg a">Hi! I'm your DLN AI assistant. Ask me anything — I can help with planning, writing, research and more.</div>
+            </div>
+            <div class="input">
+              <textarea id="chatInput" placeholder="Ask anything…"></textarea>
+              <button class="btn" onclick="chatSend()">Send</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== EMAIL ========== -->
+      <section class="view" data-view="email">
+        <div class="grid g-2">
+          <div class="glass card">
+            <h3>Compose</h3>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div><label>Recipient</label><input id="emRecip" type="text" placeholder="e.g. Manager, Team, Client" /></div>
+              <div><label>Tone</label>
+                <select id="emTone"><option>Professional</option><option>Friendly</option><option>Concise</option><option>Persuasive</option><option>Empathetic</option></select>
+              </div>
+              <div><label>Purpose</label><textarea id="emPurp" placeholder="What is this email about?"></textarea></div>
+              <button class="btn" onclick="genEmail()">✨ Generate Email</button>
+            </div>
+          </div>
+          <div class="glass card">
+            <h3>Result</h3>
+            <textarea id="emOut" style="min-height:280px" placeholder="Your generated email will appear here…"></textarea>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
+              <button class="btn ghost" onclick="copyText('emOut')">📋 Copy</button>
+              <button class="btn ghost" onclick="document.getElementById('emOut').focus()">✏️ Edit</button>
+              <button class="btn ghost" onclick="genEmail()">🔁 Regenerate</button>
+              <button class="btn accent" onclick="download('email.txt', document.getElementById('emOut').value)">⬇️ Download</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== MEETING ========== -->
+      <section class="view" data-view="meeting">
+        <div class="glass card">
+          <h3>Meeting Transcript</h3>
+          <div class="drop" id="mtDrop">Drop a .txt transcript here, or paste below</div>
+          <textarea id="mtInput" style="margin-top:10px;min-height:180px" placeholder="Paste transcript…"></textarea>
+          <div style="margin-top:10px"><button class="btn" onclick="summarizeMeeting()">✨ Summarize</button></div>
+        </div>
+        <div class="grid g-2" style="margin-top:16px">
+          <div class="glass card">
+            <h3>Executive Summary</h3>
+            <div id="mtSummary" style="line-height:1.6;font-size:14px;color:var(--text-dim)">Your summary will appear here.</div>
+          </div>
+          <div class="glass card">
+            <h3>Action Items</h3>
+            <table id="mtActions"><thead><tr><th>Owner</th><th>Action</th><th>Due</th></tr></thead><tbody><tr><td colspan="3" style="color:var(--text-dim)">No actions yet.</td></tr></tbody></table>
+            <div style="margin-top:10px"><button class="btn ghost" onclick="exportMeeting()">⬇️ Export</button></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== PLANNER ========== -->
+      <section class="view" data-view="planner">
+        <div class="glass card">
+          <h3>Task Planner</h3>
+          <div class="tabs" id="plannerTabs">
+            <button class="on" data-p="Daily">Daily</button>
+            <button data-p="Weekly">Weekly</button>
+            <button data-p="Study">Study</button>
+            <button data-p="Meeting">Meeting</button>
+          </div>
+          <textarea id="plInput" placeholder="What do you want to accomplish?"></textarea>
+          <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="btn" onclick="genPlan()">✨ Generate Plan</button>
+            <span id="plScore" class="badge green" style="display:none"></span>
+          </div>
+          <div id="plOut" style="margin-top:14px;line-height:1.7;white-space:pre-wrap"></div>
+        </div>
+      </section>
+
+      <!-- ========== RESEARCH ========== -->
+      <section class="view" data-view="research">
+        <div class="glass card">
+          <h3>Research Assistant</h3>
+          <textarea id="rsInput" placeholder="Paste text or a URL to research…"></textarea>
+          <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px">
+            <button class="btn" onclick="research('analyze')">🔎 Analyze</button>
+            <button class="btn ghost" onclick="research('quiz')">❓ Generate Quiz</button>
+            <button class="btn ghost" onclick="research('flash')">🃏 Flashcards</button>
+            <button class="btn ghost" onclick="research('interview')">🎤 Interview Qs</button>
+            <button class="btn accent" onclick="research('explain')">🧠 Explain Simply</button>
+          </div>
+          <div id="rsOut" style="margin-top:14px;line-height:1.7;white-space:pre-wrap;color:var(--text)"></div>
+        </div>
+      </section>
+
+      <!-- ========== ANNOUNCE ========== -->
+      <section class="view" data-view="announce">
+        <div class="glass card">
+          <h3>Announcement Assistant</h3>
+          <textarea id="anInput" placeholder="Paste an announcement to extract dates, required actions, and priority…"></textarea>
+          <div style="margin-top:10px"><button class="btn" onclick="parseAnnounce()">✨ Parse</button></div>
+          <div id="anOut" style="margin-top:14px;line-height:1.7;white-space:pre-wrap"></div>
+        </div>
+      </section>
+
+      <!-- ========== NOTIFS ========== -->
+      <section class="view" data-view="notifs">
+        <div class="glass card">
+          <h3>Notifications</h3>
+          <div class="tabs">
+            <button class="on" data-n="new">New</button>
+            <button data-n="all">All</button>
+            <button data-n="read">Read</button>
+          </div>
+          <h4 style="margin:10px 0 6px;color:var(--text-dim);font-size:12px">TODAY</h4>
+          <div class="list">
+            <div class="item"><div class="dot"></div><div><div>New assignment: Module 5 Reflection</div><div class="meta">2h ago · Assignment Hub</div></div></div>
+            <div class="item"><div class="dot"></div><div><div>Meeting transcript ready to summarize</div><div class="meta">4h ago · Meeting Summarizer</div></div></div>
+          </div>
+          <h4 style="margin:14px 0 6px;color:var(--text-dim);font-size:12px">YESTERDAY</h4>
+          <div class="list">
+            <div class="item"><div class="dot" style="background:#4b5563;box-shadow:none"></div><div><div>Weekly plan generated</div><div class="meta">1d ago</div></div></div>
+            <div class="item"><div class="dot" style="background:#4b5563;box-shadow:none"></div><div><div>Announcement parsed: Cohort update</div><div class="meta">1d ago</div></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== ASSIGN ========== -->
+      <section class="view" data-view="assign">
+        <div class="glass card">
+          <h3>Assignment Hub</h3>
+          <div class="tabs" id="asTabs">
+            <button class="on" data-a="all">All</button>
+            <button data-a="due">Due Soon</button>
+            <button data-a="done">Completed</button>
+          </div>
+          <div class="grid g-3" id="asGrid"></div>
+        </div>
+      </section>
+
+      <!-- ========== RESOURCES ========== -->
+      <section class="view" data-view="resources">
+        <div class="glass card">
+          <h3>Learning Resources</h3>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+            <input id="resSearch" placeholder="Search resources…" style="flex:1;min-width:220px" oninput="renderResources()">
+            <select id="resFilter" onchange="renderResources()">
+              <option value="all">All types</option>
+              <option>Article</option><option>Video</option><option>Course</option><option>Guide</option>
+            </select>
+          </div>
+          <div class="grid g-3" id="resGrid"></div>
+          <div id="resOut" style="margin-top:14px;white-space:pre-wrap;line-height:1.7"></div>
+        </div>
+      </section>
+
+      <!-- ========== ANALYTICS ========== -->
+      <section class="view" data-view="analytics">
+        <div class="grid g-4">
+          <div class="glass stat"><div class="k">Focus Hours</div><div class="v">32h</div><div class="d">This week</div></div>
+          <div class="glass stat"><div class="k">Tasks Done</div><div class="v">47</div><div class="d">▲ 12%</div></div>
+          <div class="glass stat"><div class="k">Streak</div><div class="v">🔥 21d</div><div class="d">Keep going</div></div>
+          <div class="glass stat"><div class="k">Badges</div><div class="v">8</div><div class="d">2 new</div></div>
+        </div>
+        <div class="grid g-2" style="margin-top:16px">
+          <div class="glass card">
+            <h3>Weekly Focus</h3>
+            <div class="bars">
+              <div class="bar" style="height:60%"><span>Mon</span></div>
+              <div class="bar" style="height:80%"><span>Tue</span></div>
+              <div class="bar" style="height:50%"><span>Wed</span></div>
+              <div class="bar" style="height:95%"><span>Thu</span></div>
+              <div class="bar" style="height:70%"><span>Fri</span></div>
+              <div class="bar" style="height:30%"><span>Sat</span></div>
+              <div class="bar" style="height:20%"><span>Sun</span></div>
+            </div>
+          </div>
+          <div class="glass card">
+            <h3>Time Split</h3>
+            <div style="display:flex;align-items:center;gap:24px;justify-content:center;flex-wrap:wrap">
+              <div class="pie"></div>
+              <div class="legend">
+                <div><span class="sw" style="background:var(--primary)"></span>Deep Work 40%</div>
+                <div><span class="sw" style="background:var(--secondary)"></span>Meetings 25%</div>
+                <div><span class="sw" style="background:var(--accent)"></span>Learning 20%</div>
+                <div><span class="sw" style="background:#4b5563"></span>Admin 15%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== SETTINGS ========== -->
+      <section class="view" data-view="settings">
+        <div class="grid g-2">
+          <div class="glass card">
+            <h3>Preferences</h3>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <label style="display:flex;justify-content:space-between;align-items:center;text-transform:none;letter-spacing:0;color:var(--text);font-size:14px">Dark Theme <input type="checkbox" checked></label>
+              <label style="display:flex;justify-content:space-between;align-items:center;text-transform:none;letter-spacing:0;color:var(--text);font-size:14px">Email Notifications <input type="checkbox" checked></label>
+              <label style="display:flex;justify-content:space-between;align-items:center;text-transform:none;letter-spacing:0;color:var(--text);font-size:14px">Push Notifications <input type="checkbox"></label>
+              <div>
+                <label>AI Response Length</label>
+                <select><option>Concise</option><option selected>Balanced</option><option>Detailed</option></select>
+              </div>
+              <div>
+                <label>AI Tone</label>
+                <select><option>Professional</option><option selected>Friendly</option><option>Neutral</option></select>
+              </div>
+            </div>
+          </div>
+          <div class="glass card">
+            <h3>Responsible AI</h3>
+            <p style="font-size:14px;line-height:1.7;color:var(--text-dim)">DLN AI is designed to assist — not replace — your judgment. Outputs may contain inaccuracies; always review before sharing. We do not sell your data. Prompts are used only to serve your current session unless you opt in to memory. You can request deletion of your data at any time.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- =============== COLOR STUDIO MODAL =============== -->
+<div class="modal-back" id="colorStudio">
+  <div class="glass modal" style="position:relative">
+    <button class="close" onclick="closeModal('colorStudio')">×</button>
+    <h2 style="margin-bottom:14px">🎨 Color Studio</h2>
+    <p style="color:var(--text-dim);font-size:13px;margin-bottom:14px">Customize your palette live. Changes flow through gradients, glows, buttons, logo and charts.</p>
+    <div id="csRows"></div>
+    <h3 style="margin-top:16px">Presets</h3>
+    <div class="presets" id="csPresets"></div>
+  </div>
+</div>
+
+<!-- =============== I'M LOST MODAL =============== -->
+<button class="lost-btn" onclick="openModal('lostModal')">🆘 I'm Lost</button>
+<div class="modal-back" id="lostModal">
+  <div class="glass modal wide" style="position:relative">
+    <button class="close" onclick="closeModal('lostModal')">×</button>
+    <h2>🆘 I'm Lost — Let me help</h2>
+    <p style="color:var(--text-dim);margin:6px 0 12px">Tell me what you're trying to do and I'll walk you through it, step by step.</p>
+    <textarea id="lostInput" placeholder="e.g. I don't know where to submit my Module 3 assignment…"></textarea>
+    <div style="margin-top:10px"><button class="btn" onclick="askLost()">✨ Guide Me</button></div>
+    <div id="lostOut" style="margin-top:14px;white-space:pre-wrap;line-height:1.7"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= VIEW SWITCHING ================= */
+const titles = {
+  dashboard:'Dashboard', chatbot:'AI Chatbot', email:'Email Generator',
+  meeting:'Meeting Summarizer', planner:'Task Planner', research:'Research Assistant',
+  announce:'Announcement Assistant', notifs:'Notification Center', assign:'Assignment Hub',
+  resources:'Learning Resources', analytics:'Productivity Analytics', settings:'Settings'
+};
+function enterApp(){ document.getElementById('auth').style.display='none'; document.getElementById('app').classList.add('on'); }
+function logout(){ document.getElementById('app').classList.remove('on'); document.getElementById('auth').style.display='flex'; }
+function switchView(v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.toggle('on', el.dataset.view===v));
+  document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('active', a.dataset.view===v));
+  document.getElementById('viewTitle').textContent = titles[v]||v;
+  document.getElementById('sidebar').classList.remove('on');
+}
+document.querySelectorAll('#nav a').forEach(a=>a.addEventListener('click',()=>switchView(a.dataset.view)));
+
+/* ================= MODALS ================= */
+function openModal(id){ document.getElementById(id).classList.add('on'); }
+function closeModal(id){ document.getElementById(id).classList.remove('on'); }
+document.querySelectorAll('.modal-back').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('on'); }));
+
+/* ================= TOAST ================= */
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('on'); setTimeout(()=>t.classList.remove('on'),2200); }
+function copyText(id){ navigator.clipboard.writeText(document.getElementById(id).value||''); toast('Copied to clipboard'); }
+function download(name,txt){ const b=new Blob([txt],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=name; a.click(); }
+
+/* ================= COLOR STUDIO ================= */
+const cssVars = [
+  ['Primary','--primary','#8B5CF6'],
+  ['Secondary','--secondary','#6D28D9'],
+  ['Accent','--accent','#F59E0B'],
+  ['BG Dark','--bg-dark','#0B0716'],
+  ['Card Dark','--card-dark','#14102A']
+];
+const presets = [
+  ['Original Purple', ['#8B5CF6','#6D28D9','#F59E0B','#0B0716','#14102A']],
+  ['Sunset',         ['#FF6B35','#004E89','#E63946','#0F0A1A','#1B1030']],
+  ['Forest',         ['#22C55E','#15803D','#FACC15','#07130C','#0F2018']],
+  ['Crimson Gold',   ['#DC2626','#7F1D1D','#F59E0B','#160707','#25100F']],
+  ['Cyber Teal',     ['#14B8A6','#0F766E','#A855F7','#04121A','#0B2431']]
+];
+function hexToRgb(h){h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const n=parseInt(h,16);return [(n>>16)&255,(n>>8)&255,n&255].join(',');}
+function setVar(v,color){ document.documentElement.style.setProperty(v,color); const map={'--primary':'--primary-rgb','--secondary':'--secondary-rgb','--accent':'--accent-rgb','--bg-dark':'--bg-rgb','--card-dark':'--card-rgb'}; if(map[v]) document.documentElement.style.setProperty(map[v],hexToRgb(color)); }
+function buildColorStudio(){
+  const rows = document.getElementById('csRows'); rows.innerHTML='';
+  cssVars.forEach(([label,v,def])=>{
+    const row = document.createElement('div'); row.className='cs-row';
+    row.innerHTML = `<div>${label}</div><input type="color" value="${def}" data-v="${v}"><input type="text" value="${def}" data-vh="${v}">`;
+    rows.appendChild(row);
+    const c = row.querySelector('input[type=color]'), h = row.querySelector('input[type=text]');
+    c.oninput=()=>{ h.value=c.value; setVar(v,c.value); };
+    h.oninput=()=>{ if(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(h.value)){c.value=h.value;setVar(v,h.value);} };
+  });
+  const p = document.getElementById('csPresets'); p.innerHTML='';
+  presets.forEach(([name,cols])=>{
+    const el = document.createElement('div'); el.className='preset';
+    el.innerHTML = `<div class="sw">${cols.map(c=>`<i style="background:${c}"></i>`).join('')}</div><div style="font-size:13px;font-weight:600">${name}</div>`;
+    el.onclick=()=>{ cssVars.forEach(([_,v],i)=>setVar(v,cols[i])); buildColorStudio(); };
+    p.appendChild(el);
+  });
+}
+buildColorStudio();
+
+/* ================= CLAUDE API ================= */
+const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+const MODEL = 'claude-sonnet-4-6';
+async function claude(prompt, {max=1024, system}={}){
+  try {
+    const r = await fetch(ANTHROPIC_URL, {
+      method:'POST',
+      headers:{'content-type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body: JSON.stringify({ model: MODEL, max_tokens:max, system, messages:[{role:'user',content:prompt}] })
+    });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const j = await r.json();
+    return (j.content&&j.content[0]&&j.content[0].text)||'';
+  } catch(e){
+    return null; // graceful fallback
+  }
+}
+function placeholder(what){
+  return `⚠️ Live AI response unavailable right now — here's a placeholder for ${what}. Configure API access to see live results.\n\n• Point 1\n• Point 2\n• Point 3`;
+}
+
+/* ================= CHATBOT ================= */
+const chatHistory = [];
+function addMsg(role,text){ const m=document.createElement('div'); m.className='msg '+(role==='user'?'u':'a'); m.textContent=text; document.getElementById('chatMsgs').appendChild(m); m.scrollIntoView({behavior:'smooth'}); }
+async function chatSend(){
+  const input = document.getElementById('chatInput'); const q = input.value.trim(); if(!q) return;
+  addMsg('user',q); chatHistory.push({role:'user',content:q}); input.value='';
+  const loading = document.createElement('div'); loading.className='msg a'; loading.innerHTML='<span class="spinner"></span> Thinking…'; document.getElementById('chatMsgs').appendChild(loading);
+  const ctx = chatHistory.slice(-6).map(m=>`${m.role}: ${m.content}`).join('\n');
+  const res = await claude(ctx, {system:'You are DLN AI, a helpful workplace and learning productivity assistant. Be concise, warm, and actionable.'});
+  loading.remove();
+  const answer = res || placeholder('the chat reply');
+  addMsg('assistant', answer); chatHistory.push({role:'assistant',content:answer});
+}
+function chatSuggest(el){ document.getElementById('chatInput').value = el.textContent; chatSend(); }
+
+/* ================= EMAIL ================= */
+async function genEmail(){
+  const r=document.getElementById('emRecip').value, t=document.getElementById('emTone').value, p=document.getElementById('emPurp').value;
+  const out=document.getElementById('emOut'); out.value='Generating…';
+  const res = await claude(`Write a ${t.toLowerCase()} email to ${r||'the recipient'} about: ${p||'a work update'}. Include subject line and sign-off.`, {max:800});
+  out.value = res || placeholder('the email');
+}
+
+/* ================= MEETING ================= */
+const drop = document.getElementById('mtDrop');
+['dragover','dragenter'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.add('hover');}));
+['dragleave','drop'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.remove('hover');}));
+drop.addEventListener('drop',ev=>{ const f=ev.dataTransfer.files[0]; if(f&&f.type.startsWith('text')){ f.text().then(t=>document.getElementById('mtInput').value=t); }});
+async function summarizeMeeting(){
+  const txt = document.getElementById('mtInput').value.trim(); if(!txt) return toast('Paste a transcript first');
+  document.getElementById('mtSummary').textContent='Summarizing…';
+  const res = await claude(`Summarize this meeting transcript. Return JSON with keys "summary" (3-4 sentence exec summary) and "actions" (array of {owner, action, due}). Transcript:\n${txt}`, {max:1400, system:'Return ONLY valid JSON.'});
+  let data=null; if(res){ try{ data = JSON.parse(res.match(/\{[\s\S]*\}/)[0]); }catch(e){} }
+  if(!data){
+    document.getElementById('mtSummary').textContent = placeholder('the summary');
+    document.querySelector('#mtActions tbody').innerHTML='<tr><td colspan="3" style="color:var(--text-dim)">No actions extracted.</td></tr>';
+    return;
+  }
+  document.getElementById('mtSummary').textContent = data.summary||'';
+  const tb = document.querySelector('#mtActions tbody');
+  tb.innerHTML = (data.actions||[]).map(a=>`<tr><td>${a.owner||'—'}</td><td>${a.action||''}</td><td>${a.due||'—'}</td></tr>`).join('') || '<tr><td colspan="3" style="color:var(--text-dim)">No actions.</td></tr>';
+}
+function exportMeeting(){
+  const s = document.getElementById('mtSummary').textContent;
+  const rows = [...document.querySelectorAll('#mtActions tbody tr')].map(r=>[...r.querySelectorAll('td')].map(t=>t.textContent).join(' | ')).join('\n');
+  download('meeting-summary.txt', `SUMMARY\n${s}\n\nACTIONS\n${rows}`);
+}
+
+/* ================= PLANNER ================= */
+let plannerType='Daily';
+document.querySelectorAll('#plannerTabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#plannerTabs button').forEach(x=>x.classList.remove('on'));b.classList.add('on');plannerType=b.dataset.p;});
+async function genPlan(){
+  const goal = document.getElementById('plInput').value.trim(); const out=document.getElementById('plOut');
+  out.textContent='Generating…';
+  const res = await claude(`Create a ${plannerType.toLowerCase()} time-blocked plan for: ${goal||'a productive day'}. Include specific time blocks with durations and short focus notes.`, {max:900});
+  out.textContent = res || placeholder('the plan');
+  const score = 70 + Math.floor(Math.random()*30);
+  const b = document.getElementById('plScore'); b.style.display='inline-flex'; b.textContent = `Optimization Score: ${score}/100`;
+}
+
+/* ================= RESEARCH ================= */
+async function research(mode){
+  const src = document.getElementById('rsInput').value.trim(); const out = document.getElementById('rsOut');
+  if(!src) return toast('Paste text or a URL');
+  out.textContent='Working…';
+  const prompts = {
+    analyze:`Analyze the following and produce: (1) 5 key insights, (2) 3 recommendations. Source:\n${src}`,
+    quiz:`Create a 5-question multiple-choice quiz (with answers) based on:\n${src}`,
+    flash:`Create 6 flashcards (Q → A) from:\n${src}`,
+    interview:`Generate 6 interview questions based on the concepts in:\n${src}`,
+    explain:`Explain the following in plain English for a beginner:\n${src}`
+  };
+  const res = await claude(prompts[mode], {max:1400});
+  out.textContent = res || placeholder(mode);
+}
+
+/* ================= ANNOUNCE ================= */
+async function parseAnnounce(){
+  const txt = document.getElementById('anInput').value.trim(); const out=document.getElementById('anOut');
+  if(!txt) return toast('Paste an announcement');
+  out.textContent='Parsing…';
+  const res = await claude(`Parse this announcement and return JSON with keys "dates" (array), "required_actions" (array), "priority" (Low/Medium/High/Urgent), "reason". Announcement:\n${txt}`, {max:800, system:'Return ONLY valid JSON.'});
+  let data=null; if(res){ try{ data=JSON.parse(res.match(/\{[\s\S]*\}/)[0]); }catch(e){} }
+  if(!data){ out.textContent = placeholder('the parsed announcement'); return; }
+  const color = ({Urgent:'red',High:'red',Medium:'',Low:'green'})[data.priority]||'';
+  out.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span class="badge ${color}">Priority: ${data.priority||'—'}</span><span style="color:var(--text-dim);font-size:13px">${data.reason||''}</span></div>
+    <h4 style="margin:8px 0">📅 Dates</h4><ul>${(data.dates||[]).map(d=>`<li>${d}</li>`).join('')||'<li>None</li>'}</ul>
+    <h4 style="margin:8px 0">✅ Required Actions</h4><ul>${(data.required_actions||[]).map(a=>`<li>${a}</li>`).join('')||'<li>None</li>'}</ul>
+  `;
+}
+
+/* ================= ASSIGN ================= */
+const assignments = [
+  {t:'Module 3 Reflection', c:'Facilitation Course', due:2, done:false},
+  {t:'Team Onboarding Deck', c:'Coordinator Track', due:5, done:false},
+  {t:'Q3 Retrospective Notes', c:'Manager Program', due:0, done:false},
+  {t:'Learning Journal Entry', c:'Learner Program', due:9, done:false},
+  {t:'Peer Review: Case Study', c:'Facilitation Course', due:-1, done:true},
+  {t:'Cohort Feedback Survey', c:'Coordinator Track', due:14, done:false}
+];
+let asFilter='all';
+document.querySelectorAll('#asTabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#asTabs button').forEach(x=>x.classList.remove('on'));b.classList.add('on');asFilter=b.dataset.a;renderAssign();});
+function renderAssign(){
+  const g = document.getElementById('asGrid');
+  const list = assignments.filter(a=>asFilter==='all'?true:asFilter==='done'?a.done:(!a.done && a.due<=5));
+  g.innerHTML = list.map(a=>{
+    const c = a.due<0 ? 'red' : a.due<=2 ? '' : 'green';
+    const lbl = a.done?'Completed':a.due<0?'Overdue':a.due===0?'Due today':`Due in ${a.due}d`;
+    return `<div class="glass rcard"><span class="badge ${c}">${lbl}</span><h4>${a.t}</h4><div class="meta">${a.c}</div>
+      <div class="acts"><button class="btn ghost" onclick="openModal('lostModal')">📍 Show Me Where To Submit</button></div></div>`;
+  }).join('');
+}
+renderAssign();
+
+/* ================= RESOURCES ================= */
+const resources = [
+  {t:'Deep Work Fundamentals', type:'Article', tag:'Focus'},
+  {t:'Facilitating Hybrid Meetings', type:'Video', tag:'Facilitation'},
+  {t:'Learning Design 101', type:'Course', tag:'Design'},
+  {t:'Coaching Conversations', type:'Guide', tag:'Coaching'},
+  {t:'Async Communication Playbook', type:'Guide', tag:'Comms'},
+  {t:'Data-Driven Retros', type:'Article', tag:'Retros'}
+];
+function renderResources(){
+  const q = document.getElementById('resSearch').value.toLowerCase();
+  const f = document.getElementById('resFilter').value;
+  const g = document.getElementById('resGrid');
+  g.innerHTML = resources.filter(r=>(f==='all'||r.type===f) && r.t.toLowerCase().includes(q)).map((r,i)=>`
+    <div class="glass rcard">
+      <span class="badge blue">${r.type}</span>
+      <h4>${r.t}</h4>
+      <div class="meta">Topic: ${r.tag}</div>
+      <div class="acts">
+        <button class="btn ghost" onclick="resAI('Summarize','${r.t}')">📝 Summary</button>
+        <button class="btn ghost" onclick="resAI('Quiz','${r.t}')">❓ Quiz</button>
+        <button class="btn ghost" onclick="resAI('Flashcards','${r.t}')">🃏 Flashcards</button>
+        <button class="btn ghost" onclick="resAI('Explain simply','${r.t}')">🧠 Explain</button>
+      </div>
+    </div>`).join('');
+}
+async function resAI(action,title){
+  const out = document.getElementById('resOut'); out.textContent = `${action} — ${title}…`;
+  const res = await claude(`${action} the topic "${title}" for a workplace learner. Keep it structured and practical.`, {max:1000});
+  out.textContent = `【${action} · ${title}】\n\n` + (res || placeholder(action));
+}
+renderResources();
+
+/* ================= I'M LOST ================= */
+async function askLost(){
+  const q = document.getElementById('lostInput').value.trim(); const out=document.getElementById('lostOut');
+  if(!q) return toast('Tell me what you\'re trying to do');
+  out.textContent='Thinking…';
+  const res = await claude(q, {system:'You are an empathetic learning-support guide. Provide a warm, non-judgmental, numbered step-by-step guide with clear next actions. Keep it under 250 words.', max:900});
+  out.textContent = res || placeholder('the guidance');
+}
+</script>
+</body>
+</html>
