@@ -77,14 +77,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "DLN AI — Learning Navigator" },
+      { name: "description", content: "AI-powered workplace productivity assistant for learners, facilitators, coordinators and managers." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "DLN AI — Learning Navigator" },
+      { property: "og:description", content: "AI-powered workplace productivity assistant for learners, facilitators, coordinators and managers." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "DLN AI — Learning Navigator" },
+      { name: "twitter:description", content: "AI-powered workplace productivity assistant for learners, facilitators, coordinators and managers." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/a6d2577e-bb8a-485d-8bcc-6dcc7703cab3/id-preview-9260ea3e--fd6dac18-9f02-4a15-b055-090e74fea48d.lovable.app-1784268362685.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/a6d2577e-bb8a-485d-8bcc-6dcc7703cab3/id-preview-9260ea3e--fd6dac18-9f02-4a15-b055-090e74fea48d.lovable.app-1784268362685.png" },
     ],
     links: [
       {
